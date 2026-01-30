@@ -22,12 +22,8 @@
         h2 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.8rem; margin-top: 0; border-bottom: 1px solid var(--gold-dark); padding-bottom: 10px; }
         label { display: block; font-size: 0.85rem; color: var(--gold); margin: 15px 0 5px; font-weight: 500; }
         input, select, textarea { width: 100%; padding: 14px; background: #252525; border: 1px solid #444; border-radius: 12px; color: white; font-size: 1rem; margin-bottom: 5px; outline: none; }
-        textarea { min-height: 50px; resize: none; overflow: hidden; }
+        textarea { min-height: 80px; resize: none; }
         .save-btn { width: 100%; padding: 18px; background: var(--gold); color: black; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; margin-top: 20px; cursor: pointer; }
-        .filter-section { background: #222; padding: 15px; border-radius: 15px; border: 1px solid var(--gold-dark); margin-bottom: 20px; }
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .quick-filters { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-        .quick-btn { background: #333; color: var(--gold); border: 1px solid var(--gold-dark); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; margin-bottom: 5px; cursor: pointer; }
         .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10, 10, 10, 0.95); display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--gold-dark); backdrop-filter: blur(15px); z-index: 1000; }
         .nav-item { background: none; border: none; color: #666; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
         .nav-item.active { color: var(--gold); font-weight: 700; }
@@ -37,8 +33,7 @@
         .danger { background: #e74c3c; color: white; }
         .history-item { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--gold); position: relative; cursor: pointer; }
         .del-btn { position: absolute; right: 15px; top: 15px; color: #FF4D4D; background: none; border: none; font-size: 0.8rem; cursor: pointer; z-index: 10; }
-        .summary-period { background: #252525; padding: 12px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; }
-        .sum-val { display: flex; justify-content: space-between; font-size: 0.85rem; }
+        .summary-period { background: #252525; padding: 12px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -59,23 +54,17 @@
             <label>키 (cm)</label><input type="number" id="height" step="0.1">
         </div>
         <div class="card">
-            <label>건강 관리 목표</label><textarea id="g-health" oninput="autoSize(this)"></textarea>
-            <label>자기 계발 목표</label><textarea id="g-dev" oninput="autoSize(this)"></textarea>
-            <label>재정 관리 목표</label><textarea id="g-finance" oninput="autoSize(this)"></textarea>
+            <label>건강 관리 목표</label><textarea id="g-health"></textarea>
+            <label>자기 계발 목표</label><textarea id="g-dev"></textarea>
+            <label>재정 관리 목표</label><textarea id="g-finance"></textarea>
             <button class="save-btn" onclick="saveBasic()">정보 저장 및 동기화</button>
-        </div>
-        <div class="card" style="border: 2px dashed #f1c40f;">
-            <label style="color:#f1c40f; font-weight:700;">[데이터 이사 도구]</label>
-            <textarea id="migration-box" placeholder="데이터 코드를 여기에 붙여넣으세요" style="font-size: 10px; min-height:80px;"></textarea>
-            <button class="quick-btn" style="width:100%; margin-top:10px; background:#f1c40f; color:black; font-weight:bold;" onclick="importData()">데이터 가져오기 (이사 완료)</button>
-            <button class="quick-btn" style="width:100%; margin-top:5px; border:1px solid #555;" onclick="exportData()">현재 데이터 추출 (백업)</button>
         </div>
     </section>
 
     <section id="tab-health" class="tab-content">
         <h2>Health Care</h2>
         <div class="card">
-            <label>기록 일자</label><input type="date" id="h-date" onchange="resetEditState()">
+            <label>기록 일자</label><input type="date" id="h-date">
             <label>체중 (kg)</label><input type="number" id="h-weight" step="0.1">
             <div style="margin:20px 0;"><canvas id="weightChart"></canvas></div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -83,40 +72,42 @@
                 <div><label>이완기</label><input type="number" id="bp-dia"></div>
             </div>
             <label>공복 혈당 (mg/dL)</label><input type="number" id="h-sugar">
-            <label>식단 및 칼로리</label><textarea id="h-meal" oninput="autoSize(this)"></textarea>
-            <label>운동 및 칼로리</label><textarea id="h-ex" oninput="autoSize(this)"></textarea>
-            <button class="save-btn" id="h-save-btn" onclick="saveData('health')">건강 기록 저장</button>
+            <label>식단 및 운동 메모</label><textarea id="h-meal" placeholder="식단 및 운동 내용 입력"></textarea>
+            <button class="save-btn" onclick="saveData('health')">건강 기록 저장</button>
         </div>
-        <div class="filter-section" id="h-filter-ui"></div>
         <div id="h-list"></div>
     </section>
 
     <section id="tab-dev" class="tab-content">
         <h2>Development</h2>
         <div class="card">
-            <label>날짜 선택</label><input type="date" id="d-date" onchange="resetEditState()">
-            <label>활동 내용</label><textarea id="d-desc" oninput="autoSize(this)"></textarea>
-            <label>메모 및 일기</label><textarea id="d-memo" oninput="autoSize(this)"></textarea>
-            <button class="save-btn" id="d-save-btn" onclick="saveData('dev')">성장 기록 저장</button>
+            <label>날짜 선택</label><input type="date" id="d-date">
+            <label>활동 내용 및 일기</label><textarea id="d-desc"></textarea>
+            <button class="save-btn" onclick="saveData('dev')">성장 기록 저장</button>
         </div>
-        <div class="filter-section" id="d-filter-ui"></div>
         <div id="d-list"></div>
     </section>
 
     <section id="tab-finance" class="tab-content">
         <h2>Finance</h2>
-        <div class="card" id="fin-summary-card">
+        <div class="card">
             <h3 style="color:var(--gold); margin:0 0 10px 0;">Cash Balance Summary</h3>
             <div id="fin-summary-content"></div>
         </div>
         <div class="card">
-            <label>날짜 선택</label><input type="date" id="f-date" onchange="resetEditState()">
+            <label>날짜 선택</label><input type="date" id="f-date">
             <label>구분</label><select id="f-type"><option value="지출">지출</option><option value="수입">수입</option></select>
             <label>분류</label><select id="f-cat"><option>식비</option><option>교통</option><option>문화</option><option>생활</option><option>기타</option></select>
-            <label>내역/금액</label><input type="text" id="f-desc"><input type="number" id="f-amount">
-            <button class="save-btn" id="f-save-btn" onclick="saveData('finance')">금융 내역 저장</button>
+            <label>내역</label><input type="text" id="f-desc">
+            <label>금액</label><input type="number" id="f-amount">
+            <button class="save-btn" onclick="saveData('finance')">금융 내역 저장</button>
         </div>
-        <div class="filter-section" id="f-filter-ui"></div>
+        <div class="card" style="border: 1px solid var(--gold);">
+            <h3 style="color:var(--gold); margin:0;">DRTECH (디알텍)</h3>
+            <label>매수 단가</label><input type="number" id="stock-buy-price" placeholder="매수가 입력">
+            <label>보유 수량</label><input type="number" id="stock-count" placeholder="수량 입력">
+            <button class="save-btn" style="background:#222; color:var(--gold); border:1px solid var(--gold);" onclick="saveStock()">주식 정보 저장</button>
+        </div>
         <div id="f-list"></div>
     </section>
 </div>
@@ -129,32 +120,15 @@
 </nav>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('myManager_V2')) || { basic: {}, health: [], dev: [], finance: [] };
-    let editId = null;
+    let db = JSON.parse(localStorage.getItem('myManager_V2')) || { basic: {}, health: [], dev: [], finance: [], stock: {} };
     const todayStr = new Date().toISOString().split('T')[0];
 
-    function autoSize(e) { if(e) { e.style.height = 'auto'; e.style.height = e.scrollHeight + 'px'; } }
     function syncDB() { localStorage.setItem('myManager_V2', JSON.stringify(db)); }
     function enterApp() { document.getElementById('home-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; document.getElementById('nav').style.display = 'flex'; initApp(); }
 
     function initApp() {
         document.querySelectorAll('input[type="date"]').forEach(i => i.value = todayStr);
-        loadBasic(); initFilters(); renderAll(); 
-        if (typeof Chart !== 'undefined') initChart();
-    }
-
-    function exportData() {
-        const data = localStorage.getItem('myManager_V2');
-        if(!data) { alert('데이터가 없습니다.'); return; }
-        document.getElementById('migration-box').value = data;
-        document.getElementById('migration-box').select();
-        document.execCommand('copy');
-        alert('데이터 코드가 복사되었습니다.');
-    }
-
-    function importData() {
-        const raw = document.getElementById('migration-box').value;
-        try { JSON.parse(raw); localStorage.setItem('myManager_V2', raw); alert('이사가 완료되었습니다!'); location.reload(); } catch(e) { alert('잘못된 데이터입니다.'); }
+        loadBasic(); renderAll(); if(typeof Chart !== 'undefined') initChart();
     }
 
     function showTab(id) {
@@ -162,30 +136,7 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         if(event) event.currentTarget.classList.add('active');
-        loadBasic(); resetEditState();
-        setTimeout(() => document.querySelectorAll('.active textarea').forEach(t => autoSize(t)), 50);
-    }
-
-    function getEvalTags(sys, dia, sugar, weight) {
-        let res = ''; const h = parseFloat(db.basic.height);
-        if(h && weight) {
-            const bmi = (weight / ((h/100)**2)).toFixed(1);
-            if(bmi < 18.5) res += `<span class="status-tag caution">BMI ${bmi}: 저체중</span>`;
-            else if(bmi < 23) res += `<span class="status-tag normal">BMI ${bmi}: 정상</span>`;
-            else if(bmi < 25) res += `<span class="status-tag caution">BMI ${bmi}: 과체중</span>`;
-            else res += `<span class="status-tag danger">BMI ${bmi}: 비만</span>`;
-        }
-        if(sys && dia) {
-            if(sys < 120 && dia < 80) res += '<span class="status-tag normal">혈압: 정상</span>';
-            else if(sys < 140 || dia < 90) res += '<span class="status-tag caution">혈압: 주의</span>';
-            else res += '<span class="status-tag danger">혈압: 위험</span>';
-        }
-        if(sugar) {
-            if(sugar < 100) res += '<span class="status-tag normal">혈당: 정상</span>';
-            else if(sugar < 126) res += '<span class="status-tag caution">혈당: 주의</span>';
-            else res += '<span class="status-tag danger">혈당: 위험</span>';
-        }
-        return res;
+        renderAll();
     }
 
     function loadBasic() {
@@ -195,101 +146,69 @@
             document.getElementById('g-dev').value = b.gD || ""; document.getElementById('g-finance').value = b.gF || "";
             updateAge();
         }
+        if(db.stock) {
+            document.getElementById('stock-buy-price').value = db.stock.price || '';
+            document.getElementById('stock-count').value = db.stock.count || '';
+        }
     }
 
     function saveBasic() {
         db.basic = { birth: document.getElementById('birth').value, gender: document.getElementById('gender').value, height: document.getElementById('height').value, gH: document.getElementById('g-health').value, gD: document.getElementById('g-dev').value, gF: document.getElementById('g-finance').value };
-        syncDB(); renderAll(); alert('저장 및 동기화 완료');
+        syncDB(); alert('저장 완료');
     }
 
-    function resetEditState() {
-        editId = null;
-        ['h','d','f'].forEach(k => {
-            const btn = document.getElementById(`${k}-save-btn`);
-            if(btn) btn.innerText = k === 'h' ? '건강 기록 저장' : (k === 'd' ? '성장 기록 저장' : '금융 내역 저장');
-        });
+    function saveStock() {
+        db.stock = { price: document.getElementById('stock-buy-price').value, count: document.getElementById('stock-count').value };
+        syncDB(); alert('주식 정보가 저장되었습니다.');
     }
 
     function saveData(type) {
-        let item = { id: editId || Date.now() };
+        let item = { id: Date.now() };
         if (type === 'health') {
-            item = { ...item, date: document.getElementById('h-date').value, w: parseFloat(document.getElementById('h-weight').value), sys: parseInt(document.getElementById('bp-sys').value), dia: parseInt(document.getElementById('bp-dia').value), sugar: parseInt(document.getElementById('h-sugar').value), meal: document.getElementById('h-meal').value, ex: document.getElementById('h-ex').value };
+            item = { ...item, date: document.getElementById('h-date').value, w: parseFloat(document.getElementById('h-weight').value), sys: parseInt(document.getElementById('bp-sys').value), dia: parseInt(document.getElementById('bp-dia').value), sugar: parseInt(document.getElementById('h-sugar').value), meal: document.getElementById('h-meal').value };
         } else if (type === 'dev') {
-            item = { ...item, date: document.getElementById('d-date').value, desc: document.getElementById('d-desc').value, memo: document.getElementById('d-memo').value };
+            item = { ...item, date: document.getElementById('d-date').value, desc: document.getElementById('d-desc').value };
         } else if (type === 'finance') {
             item = { ...item, date: document.getElementById('f-date').value, type: document.getElementById('f-type').value, cat: document.getElementById('f-cat').value, desc: document.getElementById('f-desc').value, amount: parseInt(document.getElementById('f-amount').value) || 0 };
         }
-        if (editId) db[type] = db[type].map(i => i.id === editId ? item : i);
-        else db[type].push(item);
-        syncDB(); renderAll(); if(type==='health') updateChart();
-        alert('저장되었습니다.'); resetEditState();
-        document.querySelectorAll('.active input:not([type="date"]), .active textarea').forEach(f => f.value = '');
+        db[type].push(item); syncDB(); renderAll(); if(type==='health') updateChart();
+        alert('기록되었습니다.');
     }
 
-    function loadForEdit(type, id) {
-        const item = db[type].find(i => i.id === id); if(!item) return;
-        editId = id;
-        if (type === 'health') {
-            document.getElementById('h-date').value = item.date; document.getElementById('h-weight').value = item.w || '';
-            document.getElementById('bp-sys').value = item.sys || ''; document.getElementById('bp-dia').value = item.dia || '';
-            document.getElementById('h-sugar').value = item.sugar || ''; document.getElementById('h-meal').value = item.meal || '';
-            document.getElementById('h-ex').value = item.ex || ''; document.getElementById('h-save-btn').innerText = "기록 수정하기";
-        } else if (type === 'dev') {
-            document.getElementById('d-date').value = item.date; document.getElementById('d-desc').value = item.desc || '';
-            document.getElementById('d-memo').value = item.memo || ''; document.getElementById('d-save-btn').innerText = "기록 수정하기";
-        } else if (type === 'finance') {
-            document.getElementById('f-date').value = item.date; document.getElementById('f-type').value = item.type;
-            document.getElementById('f-cat').value = item.cat; document.getElementById('f-desc').value = item.desc || '';
-            document.getElementById('f-amount').value = item.amount || ''; document.getElementById('f-save-btn').innerText = "기록 수정하기";
-        }
-        window.scrollTo(0, 0); setTimeout(() => document.querySelectorAll('.active textarea').forEach(t => autoSize(t)), 50);
-    }
-
-    function initFilters() {
-        const lastMonth = new Date(); lastMonth.setDate(lastMonth.getDate() - 30);
-        const start = lastMonth.toISOString().split('T')[0];
-        ['h', 'd', 'f'].forEach(p => {
-            const ui = document.getElementById(`${p}-filter-ui`);
-            if(ui) ui.innerHTML = `<div class="filter-grid"><input type="date" id="${p}-start" value="${start}"><input type="date" id="${p}-end" value="${todayStr}"></div><div class="quick-filters"><button class="quick-btn" onclick="setQuick('${p}', 30)">1개월</button><button class="quick-btn" onclick="setQuick('${p}', 365)">1년</button><button class="quick-btn" onclick="renderAll()">적용</button></div>`;
-        });
-    }
-
-    function setQuick(p, days) {
-        const end = new Date(); const start = new Date(); start.setDate(end.getDate() - days);
-        document.getElementById(`${p}-start`).value = start.toISOString().split('T')[0];
-        document.getElementById(`${p}-end`).value = end.toISOString().split('T')[0];
-        renderAll();
-    }
-
-    function deleteRecord(type, id) { if(confirm('기록을 삭제하시겠습니까?')) { db[type] = db[type].filter(i => i.id !== id); syncDB(); renderAll(); if(type==='health') updateChart(); } }
+    function deleteRecord(type, id) { if(confirm('삭제하시겠습니까?')) { db[type] = db[type].filter(i => i.id !== id); syncDB(); renderAll(); if(type==='health') updateChart(); } }
 
     function renderAll() {
-        const hList = document.getElementById('h-list'); if(hList) hList.innerHTML = '';
-        db.health.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(i => {
-            hList.innerHTML += `<div class="history-item" onclick="loadForEdit('health', ${i.id})"><strong>${i.date}</strong> | ${i.w||'-'}kg<br>${getEvalTags(i.sys, i.dia, i.sugar, i.w)}<button class="del-btn" onclick="deleteRecord('health', ${i.id}); event.stopPropagation();">삭제</button></div>`;
-        });
-        const dList = document.getElementById('d-list'); if(dList) dList.innerHTML = '';
-        db.dev.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(i => {
-            dList.innerHTML += `<div class="history-item" onclick="loadForEdit('dev', ${i.id})"><strong>${i.date}</strong><br>${i.desc.substring(0,30)}...<button class="del-btn" onclick="deleteRecord('dev', ${i.id}); event.stopPropagation();">삭제</button></div>`;
-        });
-        const fList = document.getElementById('f-list'); if(fList) fList.innerHTML = '';
-        const now = new Date(); const yStr = now.getFullYear().toString(); const mStr = yStr + "-" + (now.getMonth()+1).toString().padStart(2,'0');
-        const calc = (arr) => { let i = 0, e = 0; arr.forEach(it => { if(it.type==='수입') i+=it.amount; else e+=it.amount; }); return { i, e, b: i - e }; };
-        const dD = calc(db.finance.filter(it => it.date === todayStr)); const mD = calc(db.finance.filter(it => it.date.startsWith(mStr))); const yD = calc(db.finance.filter(it => it.date.startsWith(yStr)));
-        document.getElementById('fin-summary-content').innerHTML = `<div class="summary-period">금일: +${dD.i.toLocaleString()} | -${dD.e.toLocaleString()} | <b>잔액: ${dD.b.toLocaleString()}</b></div><div class="summary-period">당월: +${mD.i.toLocaleString()} | -${mD.e.toLocaleString()} | <b>잔액: ${mD.b.toLocaleString()}</b></div><div class="summary-period">연간: +${yD.i.toLocaleString()} | -${yD.e.toLocaleString()} | <b>잔액: ${yD.b.toLocaleString()}</b></div>`;
-        db.finance.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(it => {
-            fList.innerHTML += `<div class="history-item" onclick="loadForEdit('finance', ${it.id})"><strong>${it.date}</strong> [${it.cat}] ${it.amount.toLocaleString()}원<button class="del-btn" onclick="deleteRecord('finance', ${it.id}); event.stopPropagation();">삭제</button></div>`;
-        });
+        const hList = document.getElementById('h-list'); if(hList) {
+            hList.innerHTML = '';
+            db.health.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(i => {
+                hList.innerHTML += `<div class="history-item"><strong>${i.date}</strong> | ${i.w||'-'}kg | 혈당: ${i.sugar||'-'}<button class="del-btn" onclick="deleteRecord('health', ${i.id})">삭제</button></div>`;
+            });
+        }
+        const dList = document.getElementById('d-list'); if(dList) {
+            dList.innerHTML = '';
+            db.dev.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(i => {
+                dList.innerHTML += `<div class="history-item"><strong>${i.date}</strong><br>${i.desc}<button class="del-btn" onclick="deleteRecord('dev', ${i.id})">삭제</button></div>`;
+            });
+        }
+        const fList = document.getElementById('f-list'); if(fList) {
+            fList.innerHTML = '';
+            let totalIncome = 0, totalExpense = 0;
+            db.finance.forEach(it => { if(it.type==='수입') totalIncome += it.amount; else totalExpense += it.amount; });
+            document.getElementById('fin-summary-content').innerHTML = `<div class="summary-period">전체 수입: ${totalIncome.toLocaleString()}원</div><div class="summary-period">전체 지출: ${totalExpense.toLocaleString()}원</div><div class="summary-period" style="color:var(--gold)">현재 잔액: ${(totalIncome - totalExpense).toLocaleString()}원</div>`;
+            db.finance.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(it => {
+                fList.innerHTML += `<div class="history-item"><strong>${it.date}</strong> [${it.type}/${it.cat}] ${it.amount.toLocaleString()}원<button class="del-btn" onclick="deleteRecord('finance', ${it.id})">삭제</button></div>`;
+            });
+        }
     }
 
     let weightChart;
     function initChart() {
         const ctx = document.getElementById('weightChart').getContext('2d');
-        weightChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: '체중', data: [], borderColor: '#D4AF37', tension: 0.3, fill: true, backgroundColor: 'rgba(212,175,55,0.1)', spanGaps: true }] }, options: { scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MM/dd' } } }, y: { min: 63, max: 75 } }, plugins: { legend: { display: false } } } });
+        weightChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: '체중', data: [], borderColor: '#D4AF37', tension: 0.3, fill: false }] }, options: { scales: { x: { type: 'time', time: { unit: 'day' } } } } });
         updateChart();
     }
     function updateChart() { if(!weightChart) return; const data = db.health.filter(d => d.w).sort((a,b) => new Date(a.date) - new Date(b.date)).map(d => ({ x: d.date, y: d.w })); weightChart.data.datasets[0].data = data; weightChart.update(); }
-    function updateAge() { const b = document.getElementById('birth').value; if(!b) return; const birth = new Date(b); const now = new Date(); let age = now.getFullYear() - birth.getFullYear(); if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--; const ageBox = document.getElementById('age-box'); if(ageBox) ageBox.innerText = `만나이: ${age} 세`; }
+    function updateAge() { const b = document.getElementById('birth').value; if(!b) return; const birth = new Date(b); const now = new Date(); let age = now.getFullYear() - birth.getFullYear(); if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--; document.getElementById('age-box').innerText = `만나이: ${age} 세`; }
 </script>
 </body>
 </html>
