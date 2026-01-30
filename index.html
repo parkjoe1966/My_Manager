@@ -27,7 +27,7 @@
         .filter-section { background: #222; padding: 15px; border-radius: 15px; border: 1px solid var(--gold-dark); margin-bottom: 20px; }
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .quick-filters { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-        .quick-btn { background: #333; color: var(--gold); border: 1px solid var(--gold-dark); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; margin-bottom: 5px; }
+        .quick-btn { background: #333; color: var(--gold); border: 1px solid var(--gold-dark); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; margin-bottom: 5px; cursor: pointer; }
         .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10, 10, 10, 0.95); display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--gold-dark); backdrop-filter: blur(15px); z-index: 1000; }
         .nav-item { background: none; border: none; color: #666; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
         .nav-item.active { color: var(--gold); font-weight: 700; }
@@ -65,6 +65,12 @@
             <label>재정 관리 목표</label><textarea id="g-finance" oninput="autoSize(this)"></textarea>
             <button class="save-btn" onclick="saveBasic()">정보 저장 및 동기화</button>
         </div>
+        <div class="card" style="border: 2px dashed #f1c40f;">
+            <label style="color:#f1c40f; font-weight:700;">[데이터 이사 도구]</label>
+            <textarea id="migration-box" placeholder="여기에 복사한 데이터를 붙여넣으세요" style="font-size: 10px; min-height:60px;"></textarea>
+            <button class="quick-btn" style="width:100%; margin-top:10px; background:#f1c40f; color:black; font-weight:bold;" onclick="importData()">데이터 가져오기 (이사 완료)</button>
+            <button class="quick-btn" style="width:100%; margin-top:5px; border:1px solid #555;" onclick="exportData()">현재 데이터 추출 (백업)</button>
+        </div>
     </section>
 
     <section id="tab-health" class="tab-content">
@@ -73,17 +79,13 @@
             <label>기록 일자</label><input type="date" id="h-date" onchange="resetEditState()">
             <label>체중 (kg)</label><input type="number" id="h-weight" step="0.1">
             <div style="margin:20px 0;"><canvas id="weightChart"></canvas></div>
-            <div class="flex-row">
-                <div><label>수축기</label><input type="number" id="bp-sys"></div>
-                <div><label>이완기</label><input type="number" id="bp-dia"></div>
-            </div>
+            <div class="flex-row"><div><label>수축기</label><input type="number" id="bp-sys"></div><div><label>이완기</label><input type="number" id="bp-dia"></div></div>
             <label>공복 혈당 (mg/dL)</label><input type="number" id="h-sugar">
             <label>식단/칼로리</label><input type="number" id="h-meal-cal" placeholder="kcal"><textarea id="h-meal" oninput="autoSize(this)"></textarea>
             <label>운동/칼로리</label><input type="number" id="h-ex-cal" placeholder="kcal"><textarea id="h-ex" oninput="autoSize(this)"></textarea>
             <button class="save-btn" id="h-save-btn" onclick="saveData('health')">건강 기록 저장</button>
         </div>
-        <div class="filter-section" id="h-filter-ui"></div>
-        <div id="h-list"></div>
+        <div class="filter-section" id="h-filter-ui"></div><div id="h-list"></div>
     </section>
 
     <section id="tab-dev" class="tab-content">
@@ -94,16 +96,12 @@
             <label>메모 및 일기</label><textarea id="d-memo" oninput="autoSize(this)"></textarea>
             <button class="save-btn" id="d-save-btn" onclick="saveData('dev')">성장 기록 저장</button>
         </div>
-        <div class="filter-section" id="d-filter-ui"></div>
-        <div id="d-list"></div>
+        <div class="filter-section" id="d-filter-ui"></div><div id="d-list"></div>
     </section>
 
     <section id="tab-finance" class="tab-content">
         <h2>Finance</h2>
-        <div class="card" id="fin-summary-card">
-            <h3 style="color:var(--gold); margin:0 0 10px 0;">Cash Balance Summary</h3>
-            <div id="fin-summary-content"></div>
-        </div>
+        <div class="card" id="fin-summary-card"><h3 style="color:var(--gold); margin:0 0 10px 0;">Cash Balance Summary</h3><div id="fin-summary-content"></div></div>
         <div class="card">
             <label>날짜 선택</label><input type="date" id="f-date" onchange="resetEditState()">
             <label>구분</label><select id="f-type"><option value="지출">지출</option><option value="수입">수입</option></select>
@@ -111,8 +109,7 @@
             <label>내역/금액</label><input type="text" id="f-desc"><input type="number" id="f-amount">
             <button class="save-btn" id="f-save-btn" onclick="saveData('finance')">금융 내역 저장</button>
         </div>
-        <div class="filter-section" id="f-filter-ui"></div>
-        <div id="f-list"></div>
+        <div class="filter-section" id="f-filter-ui"></div><div id="f-list"></div>
     </section>
 </div>
 
@@ -125,24 +122,44 @@
 
 <script>
     let db = JSON.parse(localStorage.getItem('myManager_V2')) || { basic: {}, health: [], dev: [], finance: [] };
-    let editId = null; // 수정 중인 데이터 ID 보관
-
+    let editId = null;
     const todayStr = new Date().toISOString().split('T')[0];
+
     function autoSize(e) { if(e) { e.style.height = 'auto'; e.style.height = e.scrollHeight + 'px'; } }
     function syncDB() { localStorage.setItem('myManager_V2', JSON.stringify(db)); }
-
     function enterApp() { document.getElementById('home-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; document.getElementById('nav').style.display = 'flex'; initApp(); }
 
     function initApp() {
         document.querySelectorAll('input[type="date"]').forEach(i => i.value = todayStr);
-        loadBasic(); initFilters(); renderAll(); initChart();
+        loadBasic(); initFilters(); renderAll(); 
+        if (typeof Chart !== 'undefined') initChart();
+    }
+
+    function exportData() {
+        const data = localStorage.getItem('myManager_V2');
+        if(!data) { alert('복사할 데이터가 없습니다.'); return; }
+        document.getElementById('migration-box').value = data;
+        document.getElementById('migration-box').select();
+        document.execCommand('copy');
+        alert('데이터가 복사되었습니다.');
+    }
+
+    function importData() {
+        const raw = document.getElementById('migration-box').value;
+        if(!raw) { alert('붙여넣은 내용이 없습니다.'); return; }
+        try {
+            JSON.parse(raw);
+            localStorage.setItem('myManager_V2', raw);
+            alert('이사가 완료되었습니다! 앱을 새로고침합니다.');
+            location.reload();
+        } catch(e) { alert('데이터 형식이 올바르지 않습니다.'); }
     }
 
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        event.currentTarget.classList.add('active');
+        if(event) event.currentTarget.classList.add('active');
         loadBasic(); resetEditState();
         setTimeout(() => document.querySelectorAll('.active textarea').forEach(t => autoSize(t)), 50);
     }
@@ -180,18 +197,17 @@
 
     function saveBasic() {
         db.basic = { birth: document.getElementById('birth').value, gender: document.getElementById('gender').value, height: document.getElementById('height').value, gH: document.getElementById('g-health').value, gD: document.getElementById('g-dev').value, gF: document.getElementById('g-finance').value };
-        syncDB(); renderAll(); alert('기본정보가 동기화되었습니다.');
+        syncDB(); renderAll(); alert('저장 완료');
     }
 
-    // 수정 모드 해제
     function resetEditState() {
         editId = null;
-        document.getElementById('h-save-btn').innerText = "건강 기록 저장";
-        document.getElementById('d-save-btn').innerText = "성장 기록 저장";
-        document.getElementById('f-save-btn').innerText = "금융 내역 저장";
+        ['h','d','f'].forEach(k => {
+            const btn = document.getElementById(`${k}-save-btn`);
+            if(btn) btn.innerText = k === 'h' ? '건강 기록 저장' : (k === 'd' ? '성장 기록 저장' : '금융 내역 저장');
+        });
     }
 
-    // [기능 1 & 2] 데이터 저장/수정 로직
     function saveData(type) {
         let item = { id: editId || Date.now() };
         if (type === 'health') {
@@ -201,57 +217,39 @@
         } else if (type === 'finance') {
             item = { ...item, date: document.getElementById('f-date').value, type: document.getElementById('f-type').value, cat: document.getElementById('f-cat').value, desc: document.getElementById('f-desc').value, amount: parseInt(document.getElementById('f-amount').value) || 0 };
         }
-
-        if (editId) {
-            db[type] = db[type].map(i => i.id === editId ? item : i);
-            alert('기록이 수정되었습니다.');
-        } else {
-            db[type].push(item);
-            alert('기록이 저장되었습니다.');
-        }
-        
+        if (editId) db[type] = db[type].map(i => i.id === editId ? item : i);
+        else db[type].push(item);
         syncDB(); renderAll(); if(type==='health') updateChart();
-        resetEditState();
+        alert('저장되었습니다.'); resetEditState();
         document.querySelectorAll('.active input:not([type="date"]), .active textarea').forEach(f => f.value = '');
     }
 
-    // 수정 데이터 불러오기
     function loadForEdit(type, id) {
         const item = db[type].find(i => i.id === id); if(!item) return;
         editId = id;
         if (type === 'health') {
-            document.getElementById('h-date').value = item.date;
-            document.getElementById('h-weight').value = item.w || '';
-            document.getElementById('bp-sys').value = item.sys || '';
-            document.getElementById('bp-dia').value = item.dia || '';
-            document.getElementById('h-sugar').value = item.sugar || '';
-            document.getElementById('h-meal').value = item.meal || '';
-            document.getElementById('h-meal-cal').value = item.mealCal || '';
-            document.getElementById('h-ex').value = item.ex || '';
-            document.getElementById('h-ex-cal').value = item.exCal || '';
-            document.getElementById('h-save-btn').innerText = "기록 수정하기";
+            document.getElementById('h-date').value = item.date; document.getElementById('h-weight').value = item.w || '';
+            document.getElementById('bp-sys').value = item.sys || ''; document.getElementById('bp-dia').value = item.dia || '';
+            document.getElementById('h-sugar').value = item.sugar || ''; document.getElementById('h-meal').value = item.meal || '';
+            document.getElementById('h-meal-cal').value = item.mealCal || ''; document.getElementById('h-ex').value = item.ex || '';
+            document.getElementById('h-ex-cal').value = item.exCal || ''; document.getElementById('h-save-btn').innerText = "기록 수정하기";
         } else if (type === 'dev') {
-            document.getElementById('d-date').value = item.date;
-            document.getElementById('d-desc').value = item.desc || '';
-            document.getElementById('d-memo').value = item.memo || '';
-            document.getElementById('d-save-btn').innerText = "기록 수정하기";
+            document.getElementById('d-date').value = item.date; document.getElementById('d-desc').value = item.desc || '';
+            document.getElementById('d-memo').value = item.memo || ''; document.getElementById('d-save-btn').innerText = "기록 수정하기";
         } else if (type === 'finance') {
-            document.getElementById('f-date').value = item.date;
-            document.getElementById('f-type').value = item.type;
-            document.getElementById('f-cat').value = item.cat;
-            document.getElementById('f-desc').value = item.desc || '';
-            document.getElementById('f-amount').value = item.amount || '';
-            document.getElementById('f-save-btn').innerText = "기록 수정하기";
+            document.getElementById('f-date').value = item.date; document.getElementById('f-type').value = item.type;
+            document.getElementById('f-cat').value = item.cat; document.getElementById('f-desc').value = item.desc || '';
+            document.getElementById('f-amount').value = item.amount || ''; document.getElementById('f-save-btn').innerText = "기록 수정하기";
         }
-        window.scrollTo(0, 0);
-        setTimeout(() => document.querySelectorAll('.active textarea').forEach(t => autoSize(t)), 50);
+        window.scrollTo(0, 0); setTimeout(() => document.querySelectorAll('.active textarea').forEach(t => autoSize(t)), 50);
     }
 
     function initFilters() {
         const lastMonth = new Date(); lastMonth.setDate(lastMonth.getDate() - 30);
         const start = lastMonth.toISOString().split('T')[0];
         ['h', 'd', 'f'].forEach(p => {
-            document.getElementById(`${p}-filter-ui`).innerHTML = `<div class="filter-grid"><input type="date" id="${p}-start" value="${start}"><input type="date" id="${p}-end" value="${todayStr}"></div><div class="quick-filters"><button class="quick-btn" onclick="setQuick('${p}', 30)">1개월</button><button class="quick-btn" onclick="setQuick('${p}', 365)">1년</button><button class="quick-btn" onclick="renderAll()">적용</button></div>`;
+            const ui = document.getElementById(`${p}-filter-ui`);
+            if(ui) ui.innerHTML = `<div class="filter-grid"><input type="date" id="${p}-start" value="${start}"><input type="date" id="${p}-end" value="${todayStr}"></div><div class="quick-filters"><button class="quick-btn" onclick="setQuick('${p}', 30)">1개월</button><button class="quick-btn" onclick="setQuick('${p}', 365)">1년</button><button class="quick-btn" onclick="renderAll()">적용</button></div>`;
         });
     }
 
@@ -265,43 +263,32 @@
     function deleteRecord(type, id) { if(confirm('기록을 삭제하시겠습니까?')) { db[type] = db[type].filter(i => i.id !== id); syncDB(); renderAll(); if(type==='health') updateChart(); } }
 
     function renderAll() {
-        // 건강
-        const hList = document.getElementById('h-list'); hList.innerHTML = '<h3>Health Records</h3>';
-        const hS = document.getElementById('h-start').value, hE = document.getElementById('h-end').value;
+        const hList = document.getElementById('h-list'); if(hList) hList.innerHTML = '';
         db.health.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(i => {
-            if(i.date>=hS && i.date<=hE) hList.innerHTML += `<div class="history-item" onclick="loadForEdit('health', ${i.id})"><strong>${i.date}</strong> | ${i.w||'-'}kg | ${i.sys||'-'}/${i.dia||'-'}<br>${getEvalTags(i.sys, i.dia, i.sugar, i.w)}<button class="del-btn" onclick="deleteRecord('health', ${i.id}); event.stopPropagation();">삭제</button></div>`;
+            hList.innerHTML += `<div class="history-item" onclick="loadForEdit('health', ${i.id})"><strong>${i.date}</strong> | ${i.w||'-'}kg<br>${getEvalTags(i.sys, i.dia, i.sugar, i.w)}<button class="del-btn" onclick="deleteRecord('health', ${i.id}); event.stopPropagation();">삭제</button></div>`;
         });
-
-        // 자기계발
-        const dList = document.getElementById('d-list'); dList.innerHTML = '<h3>History</h3>';
-        const dS = document.getElementById('d-start').value, dE = document.getElementById('d-end').value;
+        const dList = document.getElementById('d-list'); if(dList) dList.innerHTML = '';
         db.dev.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(i => {
-            if(i.date>=dS && i.date<=dE) dList.innerHTML += `<div class="history-item" onclick="loadForEdit('dev', ${i.id})"><strong>${i.date}</strong><br>${i.desc.substring(0,30)}...<button class="del-btn" onclick="deleteRecord('dev', ${i.id}); event.stopPropagation();">삭제</button></div>`;
+            dList.innerHTML += `<div class="history-item" onclick="loadForEdit('dev', ${i.id})"><strong>${i.date}</strong><br>${i.desc.substring(0,30)}...<button class="del-btn" onclick="deleteRecord('dev', ${i.id}); event.stopPropagation();">삭제</button></div>`;
         });
-
-        // 재정
-        const fList = document.getElementById('f-list'); fList.innerHTML = '<h3>Finance History</h3>';
-        const fS = document.getElementById('f-start').value, fE = document.getElementById('f-end').value;
+        const fList = document.getElementById('f-list'); if(fList) fList.innerHTML = '';
         const now = new Date(); const yStr = now.getFullYear().toString(); const mStr = yStr + "-" + (now.getMonth()+1).toString().padStart(2,'0');
         const calc = (arr) => { let i = 0, e = 0; arr.forEach(it => { if(it.type==='수입') i+=it.amount; else e+=it.amount; }); return { i, e, b: i - e }; };
         const dD = calc(db.finance.filter(it => it.date === todayStr)); const mD = calc(db.finance.filter(it => it.date.startsWith(mStr))); const yD = calc(db.finance.filter(it => it.date.startsWith(yStr)));
-        document.getElementById('fin-summary-content').innerHTML = `<div class="summary-period"><div class="period-title">금일 (${todayStr})</div>수입: +${dD.i.toLocaleString()} | 지출: -${dD.e.toLocaleString()} | <b>잔액: ${dD.b.toLocaleString()}</b></div><div class="summary-period"><div class="period-title">당월 (${mStr})</div>수입: +${mD.i.toLocaleString()} | 지출: -${mD.e.toLocaleString()} | <b>잔액: ${mD.b.toLocaleString()}</b></div><div class="summary-period"><div class="period-title">연간 (${yStr})</div>수입: +${yD.i.toLocaleString()} | 지출: -${yD.e.toLocaleString()} | <b>잔액: ${yD.b.toLocaleString()}</b></div>`;
+        document.getElementById('fin-summary-content').innerHTML = `<div class="summary-period">금일: +${dD.i.toLocaleString()} | -${dD.e.toLocaleString()} | <b>잔액: ${dD.b.toLocaleString()}</b></div><div class="summary-period">당월: +${mD.i.toLocaleString()} | -${mD.e.toLocaleString()} | <b>잔액: ${mD.b.toLocaleString()}</b></div><div class="summary-period">연간: +${yD.i.toLocaleString()} | -${yD.e.toLocaleString()} | <b>잔액: ${yD.b.toLocaleString()}</b></div>`;
         db.finance.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(it => {
-            if(it.date>=fS && it.date<=fE) fList.innerHTML += `<div class="history-item" onclick="loadForEdit('finance', ${it.id})"><strong>${it.date}</strong> [${it.cat}] ${it.desc} | <span style="color:${it.type==='수입'?'#2ecc71':'#e74c3c'}">${it.amount.toLocaleString()}원</span><button class="del-btn" onclick="deleteRecord('finance', ${it.id}); event.stopPropagation();">삭제</button></div>`;
+            fList.innerHTML += `<div class="history-item" onclick="loadForEdit('finance', ${it.id})"><strong>${it.date}</strong> [${it.cat}] ${it.amount.toLocaleString()}원<button class="del-btn" onclick="deleteRecord('finance', ${it.id}); event.stopPropagation();">삭제</button></div>`;
         });
     }
 
     let weightChart;
     function initChart() {
         const ctx = document.getElementById('weightChart').getContext('2d');
-        weightChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: '체중 추이', data: [], borderColor: '#D4AF37', tension: 0.3, fill: true, backgroundColor: 'rgba(212,175,55,0.1)', spanGaps: true }] }, options: { scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MM/dd' } }, ticks: { autoSkip: true, maxTicksLimit: 6 } }, y: { min: 63, max: 75 } }, plugins: { legend: { display: false } } } });
+        weightChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: '체중', data: [], borderColor: '#D4AF37', tension: 0.3, fill: true, backgroundColor: 'rgba(212,175,55,0.1)', spanGaps: true }] }, options: { scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MM/dd' } } }, y: { min: 63, max: 75 } }, plugins: { legend: { display: false } } } });
         updateChart();
     }
-    function updateChart() {
-        const data = db.health.filter(d => d.w).sort((a,b) => new Date(a.date) - new Date(b.date)).map(d => ({ x: d.date, y: d.w }));
-        weightChart.data.datasets[0].data = data; weightChart.update();
-    }
-    function updateAge() { const b = document.getElementById('birth').value; if(!b) return; const birth = new Date(b); const now = new Date(); let age = now.getFullYear() - birth.getFullYear(); if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--; document.getElementById('age-box').innerText = `만나이: ${age} 세`; }
+    function updateChart() { if(!weightChart) return; const data = db.health.filter(d => d.w).sort((a,b) => new Date(a.date) - new Date(b.date)).map(d => ({ x: d.date, y: d.w })); weightChart.data.datasets[0].data = data; weightChart.update(); }
+    function updateAge() { const b = document.getElementById('birth').value; if(!b) return; const birth = new Date(b); const now = new Date(); let age = now.getFullYear() - birth.getFullYear(); if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--; const ageBox = document.getElementById('age-box'); if(ageBox) ageBox.innerText = `만나이: ${age} 세`; }
 </script>
 </body>
 </html>
