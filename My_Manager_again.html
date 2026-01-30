@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <style>
+        :root { --gold: #D4AF37; --gold-dark: #B8860B; --black: #0A0A0A; --card-bg: #1A1A1A; --text: #E0E0E0; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Noto Sans KR', sans-serif; background: var(--black); color: var(--text); line-height: 1.6; }
+        #home-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1000'); background-size: cover; background-position: center; text-align: center; }
+        #home-screen h1 { font-family: 'Playfair Display', serif; font-size: 3.5rem; color: var(--gold); margin: 0; }
+        .enter-btn { margin-top: 50px; padding: 20px 80px; background: var(--gold); color: black; border: none; border-radius: 50px; font-size: 1.4rem; font-weight: 700; cursor: pointer; }
+        #main-app { display: none; padding: 20px 20px 120px; max-width: 600px; margin: 0 auto; }
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: var(--card-bg); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 1px solid #333; }
+        h2 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.8rem; margin-top: 0; border-bottom: 1px solid var(--gold-dark); padding-bottom: 10px; }
+        label { display: block; font-size: 0.85rem; color: var(--gold); margin: 15px 0 5px; font-weight: 500; }
+        input, select, textarea { width: 100%; padding: 14px; background: #252525; border: 1px solid #444; border-radius: 12px; color: white; font-size: 1rem; margin-bottom: 5px; outline: none; }
+        textarea { min-height: 50px; resize: none; overflow: hidden; }
+        .save-btn { width: 100%; padding: 18px; background: var(--gold); color: black; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; margin-top: 20px; cursor: pointer; }
+        .filter-section { background: #222; padding: 15px; border-radius: 15px; border: 1px solid var(--gold-dark); margin-bottom: 20px; }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .quick-filters { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .quick-btn { background: #333; color: var(--gold); border: 1px solid var(--gold-dark); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; margin-bottom: 5px; }
+        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10, 10, 10, 0.95); display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--gold-dark); backdrop-filter: blur(15px); z-index: 1000; }
+        .nav-item { background: none; border: none; color: #666; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
+        .nav-item.active { color: var(--gold); font-weight: 700; }
+        .status-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; margin-right: 5px; font-weight: bold; margin-top: 5px; }
+        .normal { background: #2ecc71; color: white; }
+        .caution { background: #f1c40f; color: black; }
+        .danger { background: #e74c3c; color: white; }
+        .history-item { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--gold); position: relative; cursor: pointer; }
+        .del-btn { position: absolute; right: 15px; top: 15px; color: #FF4D4D; background: none; border: none; font-size: 0.8rem; cursor: pointer; z-index: 10; }
+        .summary-period { background: #252525; padding: 12px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; }
+        .period-title { color: var(--gold); font-weight: 700; font-size: 0.9rem; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 3px; }
+        .sum-val { display: flex; justify-content: space-between; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<div id="home-screen">
+    <h1>My Manager</h1>
+    <p style="color: var(--gold); letter-spacing: 2px;">당신만을 위한 완벽한 인공지능 비서</p>
+    <button class="enter-btn" onclick="enterApp()">ENTER</button>
+</div>
+
+<div id="main-app">
+    <section id="tab-basic" class="tab-content active">
+        <h2>Basic Info</h2>
+        <div class="card">
+            <label>생년월일</label><input type="date" id="birth" onchange="updateAge()">
+            <div id="age-box" class="history-item" style="border-color: var(--gold-dark);">만나이: - 세</div>
+            <label>성별</label><select id="gender"><option value="남">남성</option><option value="여">여성</option></select>
+            <label>키 (cm)</label><input type="number" id="height" step="0.1">
+        </div>
+        <div class="card">
+            <label>건강 관리 목표</label><textarea id="g-health" oninput="autoSize(this)"></textarea>
+            <label>자기 계발 목표</label><textarea id="g-dev" oninput="autoSize(this)"></textarea>
+            <label>재정 관리 목표</label><textarea id="g-finance" oninput="autoSize(this)"></textarea>
+            <button class="save-btn" onclick="saveBasic()">정보 저장 및 동기화</button>
+        </div>
+    </section>
+
+    <section id="tab-health" class="tab-content">
+        <h2>Health Care</h2>
+        <div class="card">
+            <label>기록 일자</label><input type="date" id="h-date" onchange="resetEditState()">
+            <label>체중 (kg)</label><input type="number" id="h-weight" step="0.1">
+            <div style="margin:20px 0;"><canvas id="weightChart"></canvas></div>
+            <div class="flex-row">
+                <div><label>수축기</label><input type="number" id="bp-sys"></div>
+                <div><label>이완기</label><input type="number" id="bp-dia"></div>
+            </div>
+            <label>공복 혈당 (mg/dL)</label><input type="number" id="h-sugar">
+            <label>식단/칼로리</label><input type="number" id="h-meal-cal" placeholder="kcal"><textarea id="h-meal" oninput="autoSize(this)"></textarea>
+            <label>운동/칼로리</label><input type="number" id="h-ex-cal" placeholder="kcal"><textarea id="h-ex" oninput="autoSize(this)"></textarea>
+            <button class="save-btn" id="h-save-btn" onclick="saveData('health')">건강 기록 저장</button>
+        </div>
+        <div class="filter-section" id="h-filter-ui"></div>
+        <div id="h-list"></div>
+    </section>
+
+    <section id="tab-dev" class="tab-content">
+        <h2>Development</h2>
+        <div class="card">
+            <label>날짜 선택</label><input type="date" id="d-date" onchange="resetEditState()">
+            <label>활동 내용</label><textarea id="d-desc" oninput="autoSize(this)"></textarea>
+            <label>메모 및 일기</label><textarea id="d-memo" oninput="autoSize(this)"></textarea>
+            <button class="save-btn" id="d-save-btn" onclick="saveData('dev')">성장 기록 저장</button>
+        </div>
+        <div class="filter-section" id="d-filter-ui"></div>
+        <div id="d-list"></div>
+    </section>
+
+    <section id="tab-finance" class="tab-content">
+        <h2>Finance</h2>
+        <div class="card" id="fin-summary-card">
+            <h3 style="color:var(--gold); margin:0 0 10px 0;">Cash Balance Summary</h3>
+            <div id="fin-summary-content"></div>
+        </div>
+        <div class="card">
+            <label>날짜 선택</label><input type="date" id="f-date" onchange="resetEditState()">
+            <label>구분</label><select id="f-type"><option value="지출">지출</option><option value="수입">수입</option></select>
+            <label>분류</label><select id="f-cat"><option>식비</option><option>교통</option><option>문화</option><option>생활</option><option>기타</option></select>
+            <label>내역/금액</label><input type="text" id="f-desc"><input type="number" id="f-amount">
+            <button class="save-btn" id="f-save-btn" onclick="saveData('finance')">금융 내역 저장</button>
+        </div>
+        <div class="filter-section" id="f-filter-ui"></div>
+        <div id="f-list"></div>
+    </section>
+</div>
+
+<nav class="nav-bar" id="nav" style="display:none;">
+    <button class="nav-item active" onclick="showTab('tab-basic')">BASIC</button>
+    <button class="nav-item" onclick="showTab('tab-health')">HEALTH</button>
+    <button class="nav-item" onclick="showTab('tab-dev')">DEVELOP</button>
+    <button class="nav-item" onclick="showTab('tab-finance')">FINANCE</button>
+</nav>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('myManager_V2')) || { basic: {}, health: [], dev: [], finance: [] };
+    let editId = null; // 수정 중인 데이터 ID 보관
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    function autoSize(e) { if(e) { e.style.height = 'auto'; e.style.height = e.scrollHeight + 'px'; } }
+    function syncDB() { localStorage.setItem('myManager_V2', JSON.stringify(db)); }
+
+    function enterApp() { document.getElementById('home-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; document.getElementById('nav').style.display = 'flex'; initApp(); }
+
+    function initApp() {
+        document.querySelectorAll('input[type="date"]').forEach(i => i.value = todayStr);
+        loadBasic(); initFilters(); renderAll(); initChart();
+    }
+
+    function showTab(id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        loadBasic(); resetEditState();
+        setTimeout(() => document.querySelectorAll('.active textarea').forEach(t => autoSize(t)), 50);
+    }
+
+    function getEvalTags(sys, dia, sugar, weight) {
+        let res = ''; const h = parseFloat(db.basic.height);
+        if(h && weight) {
+            const bmi = (weight / ((h/100)**2)).toFixed(1);
+            if(bmi < 18.5) res += `<span class="status-tag caution">BMI ${bmi}: 저체중</span>`;
+            else if(bmi < 23) res += `<span class="status-tag normal">BMI ${bmi}: 정상</span>`;
+            else if(bmi < 25) res += `<span class="status-tag caution">BMI ${bmi}: 과체중</span>`;
+            else res += `<span class="status-tag danger">BMI ${bmi}: 비만</span>`;
+        }
+        if(sys && dia) {
+            if(sys < 120 && dia < 80) res += '<span class="status-tag normal">혈압: 정상</span>';
+            else if(sys < 140 || dia < 90) res += '<span class="status-tag caution">혈압: 주의</span>';
+            else res += '<span class="status-tag danger">혈압: 위험</span>';
+        }
+        if(sugar) {
+            if(sugar < 100) res += '<span class="status-tag normal">혈당: 정상</span>';
+            else if(sugar < 126) res += '<span class="status-tag caution">혈당: 주의</span>';
+            else res += '<span class="status-tag danger">혈당: 위험</span>';
+        }
+        return res;
+    }
+
+    function loadBasic() {
+        const b = db.basic; if(b.birth) {
+            document.getElementById('birth').value = b.birth; document.getElementById('gender').value = b.gender;
+            document.getElementById('height').value = b.height; document.getElementById('g-health').value = b.gH || "";
+            document.getElementById('g-dev').value = b.gD || ""; document.getElementById('g-finance').value = b.gF || "";
+            updateAge();
+        }
+    }
+
+    function saveBasic() {
+        db.basic = { birth: document.getElementById('birth').value, gender: document.getElementById('gender').value, height: document.getElementById('height').value, gH: document.getElementById('g-health').value, gD: document.getElementById('g-dev').value, gF: document.getElementById('g-finance').value };
+        syncDB(); renderAll(); alert('기본정보가 동기화되었습니다.');
+    }
+
+    // 수정 모드 해제
+    function resetEditState() {
+        editId = null;
+        document.getElementById('h-save-btn').innerText = "건강 기록 저장";
+        document.getElementById('d-save-btn').innerText = "성장 기록 저장";
+        document.getElementById('f-save-btn').innerText = "금융 내역 저장";
+    }
+
+    // [기능 1 & 2] 데이터 저장/수정 로직
+    function saveData(type) {
+        let item = { id: editId || Date.now() };
+        if (type === 'health') {
+            item = { ...item, date: document.getElementById('h-date').value, w: parseFloat(document.getElementById('h-weight').value), sys: parseInt(document.getElementById('bp-sys').value), dia: parseInt(document.getElementById('bp-dia').value), sugar: parseInt(document.getElementById('h-sugar').value), meal: document.getElementById('h-meal').value, mealCal: document.getElementById('h-meal-cal').value, ex: document.getElementById('h-ex').value, exCal: document.getElementById('h-ex-cal').value };
+        } else if (type === 'dev') {
+            item = { ...item, date: document.getElementById('d-date').value, desc: document.getElementById('d-desc').value, memo: document.getElementById('d-memo').value };
+        } else if (type === 'finance') {
+            item = { ...item, date: document.getElementById('f-date').value, type: document.getElementById('f-type').value, cat: document.getElementById('f-cat').value, desc: document.getElementById('f-desc').value, amount: parseInt(document.getElementById('f-amount').value) || 0 };
+        }
+
+        if (editId) {
+            db[type] = db[type].map(i => i.id === editId ? item : i);
+            alert('기록이 수정되었습니다.');
+        } else {
+            db[type].push(item);
+            alert('기록이 저장되었습니다.');
+        }
+        
+        syncDB(); renderAll(); if(type==='health') updateChart();
+        resetEditState();
+        document.querySelectorAll('.active input:not([type="date"]), .active textarea').forEach(f => f.value = '');
+    }
+
+    // 수정 데이터 불러오기
+    function loadForEdit(type, id) {
+        const item = db[type].find(i => i.id === id); if(!item) return;
+        editId = id;
+        if (type === 'health') {
+            document.getElementById('h-date').value = item.date;
+            document.getElementById('h-weight').value = item.w || '';
+            document.getElementById('bp-sys').value = item.sys || '';
+            document.getElementById('bp-dia').value = item.dia || '';
+            document.getElementById('h-sugar').value = item.sugar || '';
+            document.getElementById('h-meal').value = item.meal || '';
+            document.getElementById('h-meal-cal').value = item.mealCal || '';
+            document.getElementById('h-ex').value = item.ex || '';
+            document.getElementById('h-ex-cal').value = item.exCal || '';
+            document.getElementById('h-save-btn').innerText = "기록 수정하기";
+        } else if (type === 'dev') {
+            document.getElementById('d-date').value = item.date;
+            document.getElementById('d-desc').value = item.desc || '';
+            document.getElementById('d-memo').value = item.memo || '';
+            document.getElementById('d-save-btn').innerText = "기록 수정하기";
+        } else if (type === 'finance') {
+            document.getElementById('f-date').value = item.date;
+            document.getElementById('f-type').value = item.type;
+            document.getElementById('f-cat').value = item.cat;
+            document.getElementById('f-desc').value = item.desc || '';
+            document.getElementById('f-amount').value = item.amount || '';
+            document.getElementById('f-save-btn').innerText = "기록 수정하기";
+        }
+        window.scrollTo(0, 0);
+        setTimeout(() => document.querySelectorAll('.active textarea').forEach(t => autoSize(t)), 50);
+    }
+
+    function initFilters() {
+        const lastMonth = new Date(); lastMonth.setDate(lastMonth.getDate() - 30);
+        const start = lastMonth.toISOString().split('T')[0];
+        ['h', 'd', 'f'].forEach(p => {
+            document.getElementById(`${p}-filter-ui`).innerHTML = `<div class="filter-grid"><input type="date" id="${p}-start" value="${start}"><input type="date" id="${p}-end" value="${todayStr}"></div><div class="quick-filters"><button class="quick-btn" onclick="setQuick('${p}', 30)">1개월</button><button class="quick-btn" onclick="setQuick('${p}', 365)">1년</button><button class="quick-btn" onclick="renderAll()">적용</button></div>`;
+        });
+    }
+
+    function setQuick(p, days) {
+        const end = new Date(); const start = new Date(); start.setDate(end.getDate() - days);
+        document.getElementById(`${p}-start`).value = start.toISOString().split('T')[0];
+        document.getElementById(`${p}-end`).value = end.toISOString().split('T')[0];
+        renderAll();
+    }
+
+    function deleteRecord(type, id) { if(confirm('기록을 삭제하시겠습니까?')) { db[type] = db[type].filter(i => i.id !== id); syncDB(); renderAll(); if(type==='health') updateChart(); } }
+
+    function renderAll() {
+        // 건강
+        const hList = document.getElementById('h-list'); hList.innerHTML = '<h3>Health Records</h3>';
+        const hS = document.getElementById('h-start').value, hE = document.getElementById('h-end').value;
+        db.health.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(i => {
+            if(i.date>=hS && i.date<=hE) hList.innerHTML += `<div class="history-item" onclick="loadForEdit('health', ${i.id})"><strong>${i.date}</strong> | ${i.w||'-'}kg | ${i.sys||'-'}/${i.dia||'-'}<br>${getEvalTags(i.sys, i.dia, i.sugar, i.w)}<button class="del-btn" onclick="deleteRecord('health', ${i.id}); event.stopPropagation();">삭제</button></div>`;
+        });
+
+        // 자기계발
+        const dList = document.getElementById('d-list'); dList.innerHTML = '<h3>History</h3>';
+        const dS = document.getElementById('d-start').value, dE = document.getElementById('d-end').value;
+        db.dev.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(i => {
+            if(i.date>=dS && i.date<=dE) dList.innerHTML += `<div class="history-item" onclick="loadForEdit('dev', ${i.id})"><strong>${i.date}</strong><br>${i.desc.substring(0,30)}...<button class="del-btn" onclick="deleteRecord('dev', ${i.id}); event.stopPropagation();">삭제</button></div>`;
+        });
+
+        // 재정
+        const fList = document.getElementById('f-list'); fList.innerHTML = '<h3>Finance History</h3>';
+        const fS = document.getElementById('f-start').value, fE = document.getElementById('f-end').value;
+        const now = new Date(); const yStr = now.getFullYear().toString(); const mStr = yStr + "-" + (now.getMonth()+1).toString().padStart(2,'0');
+        const calc = (arr) => { let i = 0, e = 0; arr.forEach(it => { if(it.type==='수입') i+=it.amount; else e+=it.amount; }); return { i, e, b: i - e }; };
+        const dD = calc(db.finance.filter(it => it.date === todayStr)); const mD = calc(db.finance.filter(it => it.date.startsWith(mStr))); const yD = calc(db.finance.filter(it => it.date.startsWith(yStr)));
+        document.getElementById('fin-summary-content').innerHTML = `<div class="summary-period"><div class="period-title">금일 (${todayStr})</div>수입: +${dD.i.toLocaleString()} | 지출: -${dD.e.toLocaleString()} | <b>잔액: ${dD.b.toLocaleString()}</b></div><div class="summary-period"><div class="period-title">당월 (${mStr})</div>수입: +${mD.i.toLocaleString()} | 지출: -${mD.e.toLocaleString()} | <b>잔액: ${mD.b.toLocaleString()}</b></div><div class="summary-period"><div class="period-title">연간 (${yStr})</div>수입: +${yD.i.toLocaleString()} | 지출: -${yD.e.toLocaleString()} | <b>잔액: ${yD.b.toLocaleString()}</b></div>`;
+        db.finance.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(it => {
+            if(it.date>=fS && it.date<=fE) fList.innerHTML += `<div class="history-item" onclick="loadForEdit('finance', ${it.id})"><strong>${it.date}</strong> [${it.cat}] ${it.desc} | <span style="color:${it.type==='수입'?'#2ecc71':'#e74c3c'}">${it.amount.toLocaleString()}원</span><button class="del-btn" onclick="deleteRecord('finance', ${it.id}); event.stopPropagation();">삭제</button></div>`;
+        });
+    }
+
+    let weightChart;
+    function initChart() {
+        const ctx = document.getElementById('weightChart').getContext('2d');
+        weightChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: '체중 추이', data: [], borderColor: '#D4AF37', tension: 0.3, fill: true, backgroundColor: 'rgba(212,175,55,0.1)', spanGaps: true }] }, options: { scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'MM/dd' } }, ticks: { autoSkip: true, maxTicksLimit: 6 } }, y: { min: 63, max: 75 } }, plugins: { legend: { display: false } } } });
+        updateChart();
+    }
+    function updateChart() {
+        const data = db.health.filter(d => d.w).sort((a,b) => new Date(a.date) - new Date(b.date)).map(d => ({ x: d.date, y: d.w }));
+        weightChart.data.datasets[0].data = data; weightChart.update();
+    }
+    function updateAge() { const b = document.getElementById('birth').value; if(!b) return; const birth = new Date(b); const now = new Date(); let age = now.getFullYear() - birth.getFullYear(); if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--; document.getElementById('age-box').innerText = `만나이: ${age} 세`; }
+</script>
+</body>
+</html>
