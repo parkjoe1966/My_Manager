@@ -38,7 +38,6 @@
         .history-item { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--gold); position: relative; cursor: pointer; }
         .del-btn { position: absolute; right: 15px; top: 15px; color: #FF4D4D; background: none; border: none; font-size: 0.8rem; cursor: pointer; z-index: 10; }
         .summary-period { background: #252525; padding: 12px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; }
-        .period-title { color: var(--gold); font-weight: 700; font-size: 0.9rem; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 3px; }
         .sum-val { display: flex; justify-content: space-between; font-size: 0.85rem; }
     </style>
 </head>
@@ -67,7 +66,7 @@
         </div>
         <div class="card" style="border: 2px dashed #f1c40f;">
             <label style="color:#f1c40f; font-weight:700;">[데이터 이사 도구]</label>
-            <textarea id="migration-box" placeholder="여기에 복사한 데이터를 붙여넣으세요" style="font-size: 10px; min-height:60px;"></textarea>
+            <textarea id="migration-box" placeholder="데이터 코드를 여기에 붙여넣으세요" style="font-size: 10px; min-height:80px;"></textarea>
             <button class="quick-btn" style="width:100%; margin-top:10px; background:#f1c40f; color:black; font-weight:bold;" onclick="importData()">데이터 가져오기 (이사 완료)</button>
             <button class="quick-btn" style="width:100%; margin-top:5px; border:1px solid #555;" onclick="exportData()">현재 데이터 추출 (백업)</button>
         </div>
@@ -79,13 +78,17 @@
             <label>기록 일자</label><input type="date" id="h-date" onchange="resetEditState()">
             <label>체중 (kg)</label><input type="number" id="h-weight" step="0.1">
             <div style="margin:20px 0;"><canvas id="weightChart"></canvas></div>
-            <div class="flex-row"><div><label>수축기</label><input type="number" id="bp-sys"></div><div><label>이완기</label><input type="number" id="bp-dia"></div></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div><label>수축기</label><input type="number" id="bp-sys"></div>
+                <div><label>이완기</label><input type="number" id="bp-dia"></div>
+            </div>
             <label>공복 혈당 (mg/dL)</label><input type="number" id="h-sugar">
-            <label>식단/칼로리</label><input type="number" id="h-meal-cal" placeholder="kcal"><textarea id="h-meal" oninput="autoSize(this)"></textarea>
-            <label>운동/칼로리</label><input type="number" id="h-ex-cal" placeholder="kcal"><textarea id="h-ex" oninput="autoSize(this)"></textarea>
+            <label>식단 및 칼로리</label><textarea id="h-meal" oninput="autoSize(this)"></textarea>
+            <label>운동 및 칼로리</label><textarea id="h-ex" oninput="autoSize(this)"></textarea>
             <button class="save-btn" id="h-save-btn" onclick="saveData('health')">건강 기록 저장</button>
         </div>
-        <div class="filter-section" id="h-filter-ui"></div><div id="h-list"></div>
+        <div class="filter-section" id="h-filter-ui"></div>
+        <div id="h-list"></div>
     </section>
 
     <section id="tab-dev" class="tab-content">
@@ -96,12 +99,16 @@
             <label>메모 및 일기</label><textarea id="d-memo" oninput="autoSize(this)"></textarea>
             <button class="save-btn" id="d-save-btn" onclick="saveData('dev')">성장 기록 저장</button>
         </div>
-        <div class="filter-section" id="d-filter-ui"></div><div id="d-list"></div>
+        <div class="filter-section" id="d-filter-ui"></div>
+        <div id="d-list"></div>
     </section>
 
     <section id="tab-finance" class="tab-content">
         <h2>Finance</h2>
-        <div class="card" id="fin-summary-card"><h3 style="color:var(--gold); margin:0 0 10px 0;">Cash Balance Summary</h3><div id="fin-summary-content"></div></div>
+        <div class="card" id="fin-summary-card">
+            <h3 style="color:var(--gold); margin:0 0 10px 0;">Cash Balance Summary</h3>
+            <div id="fin-summary-content"></div>
+        </div>
         <div class="card">
             <label>날짜 선택</label><input type="date" id="f-date" onchange="resetEditState()">
             <label>구분</label><select id="f-type"><option value="지출">지출</option><option value="수입">수입</option></select>
@@ -109,7 +116,8 @@
             <label>내역/금액</label><input type="text" id="f-desc"><input type="number" id="f-amount">
             <button class="save-btn" id="f-save-btn" onclick="saveData('finance')">금융 내역 저장</button>
         </div>
-        <div class="filter-section" id="f-filter-ui"></div><div id="f-list"></div>
+        <div class="filter-section" id="f-filter-ui"></div>
+        <div id="f-list"></div>
     </section>
 </div>
 
@@ -137,22 +145,16 @@
 
     function exportData() {
         const data = localStorage.getItem('myManager_V2');
-        if(!data) { alert('복사할 데이터가 없습니다.'); return; }
+        if(!data) { alert('데이터가 없습니다.'); return; }
         document.getElementById('migration-box').value = data;
         document.getElementById('migration-box').select();
         document.execCommand('copy');
-        alert('데이터가 복사되었습니다.');
+        alert('데이터 코드가 복사되었습니다.');
     }
 
     function importData() {
         const raw = document.getElementById('migration-box').value;
-        if(!raw) { alert('붙여넣은 내용이 없습니다.'); return; }
-        try {
-            JSON.parse(raw);
-            localStorage.setItem('myManager_V2', raw);
-            alert('이사가 완료되었습니다! 앱을 새로고침합니다.');
-            location.reload();
-        } catch(e) { alert('데이터 형식이 올바르지 않습니다.'); }
+        try { JSON.parse(raw); localStorage.setItem('myManager_V2', raw); alert('이사가 완료되었습니다!'); location.reload(); } catch(e) { alert('잘못된 데이터입니다.'); }
     }
 
     function showTab(id) {
@@ -197,7 +199,7 @@
 
     function saveBasic() {
         db.basic = { birth: document.getElementById('birth').value, gender: document.getElementById('gender').value, height: document.getElementById('height').value, gH: document.getElementById('g-health').value, gD: document.getElementById('g-dev').value, gF: document.getElementById('g-finance').value };
-        syncDB(); renderAll(); alert('저장 완료');
+        syncDB(); renderAll(); alert('저장 및 동기화 완료');
     }
 
     function resetEditState() {
@@ -211,7 +213,7 @@
     function saveData(type) {
         let item = { id: editId || Date.now() };
         if (type === 'health') {
-            item = { ...item, date: document.getElementById('h-date').value, w: parseFloat(document.getElementById('h-weight').value), sys: parseInt(document.getElementById('bp-sys').value), dia: parseInt(document.getElementById('bp-dia').value), sugar: parseInt(document.getElementById('h-sugar').value), meal: document.getElementById('h-meal').value, mealCal: document.getElementById('h-meal-cal').value, ex: document.getElementById('h-ex').value, exCal: document.getElementById('h-ex-cal').value };
+            item = { ...item, date: document.getElementById('h-date').value, w: parseFloat(document.getElementById('h-weight').value), sys: parseInt(document.getElementById('bp-sys').value), dia: parseInt(document.getElementById('bp-dia').value), sugar: parseInt(document.getElementById('h-sugar').value), meal: document.getElementById('h-meal').value, ex: document.getElementById('h-ex').value };
         } else if (type === 'dev') {
             item = { ...item, date: document.getElementById('d-date').value, desc: document.getElementById('d-desc').value, memo: document.getElementById('d-memo').value };
         } else if (type === 'finance') {
@@ -231,8 +233,7 @@
             document.getElementById('h-date').value = item.date; document.getElementById('h-weight').value = item.w || '';
             document.getElementById('bp-sys').value = item.sys || ''; document.getElementById('bp-dia').value = item.dia || '';
             document.getElementById('h-sugar').value = item.sugar || ''; document.getElementById('h-meal').value = item.meal || '';
-            document.getElementById('h-meal-cal').value = item.mealCal || ''; document.getElementById('h-ex').value = item.ex || '';
-            document.getElementById('h-ex-cal').value = item.exCal || ''; document.getElementById('h-save-btn').innerText = "기록 수정하기";
+            document.getElementById('h-ex').value = item.ex || ''; document.getElementById('h-save-btn').innerText = "기록 수정하기";
         } else if (type === 'dev') {
             document.getElementById('d-date').value = item.date; document.getElementById('d-desc').value = item.desc || '';
             document.getElementById('d-memo').value = item.memo || ''; document.getElementById('d-save-btn').innerText = "기록 수정하기";
