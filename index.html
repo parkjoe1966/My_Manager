@@ -22,17 +22,13 @@
         h2 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.8rem; margin-top: 0; border-bottom: 1px solid var(--gold-dark); padding-bottom: 10px; }
         label { display: block; font-size: 0.85rem; color: var(--gold); margin: 15px 0 5px; font-weight: 500; }
         input, select, textarea { width: 100%; padding: 14px; background: #252525; border: 1px solid #444; border-radius: 12px; color: white; font-size: 1rem; margin-bottom: 5px; outline: none; }
-        textarea { min-height: 80px; resize: none; }
+        textarea { min-height: 50px; resize: none; overflow: hidden; }
         .save-btn { width: 100%; padding: 18px; background: var(--gold); color: black; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; margin-top: 20px; cursor: pointer; }
         .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10, 10, 10, 0.95); display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--gold-dark); backdrop-filter: blur(15px); z-index: 1000; }
         .nav-item { background: none; border: none; color: #666; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
         .nav-item.active { color: var(--gold); font-weight: 700; }
-        .status-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; margin-right: 5px; font-weight: bold; margin-top: 5px; }
-        .normal { background: #2ecc71; color: white; }
-        .caution { background: #f1c40f; color: black; }
-        .danger { background: #e74c3c; color: white; }
-        .history-item { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--gold); position: relative; cursor: pointer; }
-        .del-btn { position: absolute; right: 15px; top: 15px; color: #FF4D4D; background: none; border: none; font-size: 0.8rem; cursor: pointer; z-index: 10; }
+        .history-item { background: #222; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--gold); position: relative; }
+        .del-btn { position: absolute; right: 15px; top: 15px; color: #FF4D4D; background: none; border: none; font-size: 0.8rem; cursor: pointer; }
         .summary-period { background: #252525; padding: 12px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; font-size: 0.85rem; }
     </style>
 </head>
@@ -49,14 +45,9 @@
         <h2>Basic Info</h2>
         <div class="card">
             <label>생년월일</label><input type="date" id="birth" onchange="updateAge()">
-            <div id="age-box" class="history-item" style="border-color: var(--gold-dark);">만나이: - 세</div>
+            <div id="age-box" class="history-item">만나이: - 세</div>
             <label>성별</label><select id="gender"><option value="남">남성</option><option value="여">여성</option></select>
             <label>키 (cm)</label><input type="number" id="height" step="0.1">
-        </div>
-        <div class="card">
-            <label>건강 관리 목표</label><textarea id="g-health"></textarea>
-            <label>자기 계발 목표</label><textarea id="g-dev"></textarea>
-            <label>재정 관리 목표</label><textarea id="g-finance"></textarea>
             <button class="save-btn" onclick="saveBasic()">정보 저장 및 동기화</button>
         </div>
     </section>
@@ -72,7 +63,8 @@
                 <div><label>이완기</label><input type="number" id="bp-dia"></div>
             </div>
             <label>공복 혈당 (mg/dL)</label><input type="number" id="h-sugar">
-            <label>식단 및 운동 메모</label><textarea id="h-meal" placeholder="식단 및 운동 내용 입력"></textarea>
+            <label>식단 및 칼로리</label><textarea id="h-meal" oninput="autoSize(this)"></textarea>
+            <label>운동 및 칼로리</label><textarea id="h-ex" oninput="autoSize(this)"></textarea>
             <button class="save-btn" onclick="saveData('health')">건강 기록 저장</button>
         </div>
         <div id="h-list"></div>
@@ -82,7 +74,8 @@
         <h2>Development</h2>
         <div class="card">
             <label>날짜 선택</label><input type="date" id="d-date">
-            <label>활동 내용 및 일기</label><textarea id="d-desc"></textarea>
+            <label>활동 내용</label><textarea id="d-desc" oninput="autoSize(this)"></textarea>
+            <label>메모 및 일기</label><textarea id="d-memo" oninput="autoSize(this)"></textarea>
             <button class="save-btn" onclick="saveData('dev')">성장 기록 저장</button>
         </div>
         <div id="d-list"></div>
@@ -102,12 +95,6 @@
             <label>금액</label><input type="number" id="f-amount">
             <button class="save-btn" onclick="saveData('finance')">금융 내역 저장</button>
         </div>
-        <div class="card" style="border: 1px solid var(--gold);">
-            <h3 style="color:var(--gold); margin:0;">DRTECH (디알텍)</h3>
-            <label>매수 단가</label><input type="number" id="stock-buy-price" placeholder="매수가 입력">
-            <label>보유 수량</label><input type="number" id="stock-count" placeholder="수량 입력">
-            <button class="save-btn" style="background:#222; color:var(--gold); border:1px solid var(--gold);" onclick="saveStock()">주식 정보 저장</button>
-        </div>
         <div id="f-list"></div>
     </section>
 </div>
@@ -120,9 +107,10 @@
 </nav>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('myManager_V2')) || { basic: {}, health: [], dev: [], finance: [], stock: {} };
+    let db = JSON.parse(localStorage.getItem('myManager_V2')) || { basic: {}, health: [], dev: [], finance: [] };
     const todayStr = new Date().toISOString().split('T')[0];
 
+    function autoSize(e) { if(e) { e.style.height = 'auto'; e.style.height = e.scrollHeight + 'px'; } }
     function syncDB() { localStorage.setItem('myManager_V2', JSON.stringify(db)); }
     function enterApp() { document.getElementById('home-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; document.getElementById('nav').style.display = 'flex'; initApp(); }
 
@@ -142,37 +130,26 @@
     function loadBasic() {
         const b = db.basic; if(b.birth) {
             document.getElementById('birth').value = b.birth; document.getElementById('gender').value = b.gender;
-            document.getElementById('height').value = b.height; document.getElementById('g-health').value = b.gH || "";
-            document.getElementById('g-dev').value = b.gD || ""; document.getElementById('g-finance').value = b.gF || "";
-            updateAge();
-        }
-        if(db.stock) {
-            document.getElementById('stock-buy-price').value = db.stock.price || '';
-            document.getElementById('stock-count').value = db.stock.count || '';
+            document.getElementById('height').value = b.height; updateAge();
         }
     }
 
     function saveBasic() {
-        db.basic = { birth: document.getElementById('birth').value, gender: document.getElementById('gender').value, height: document.getElementById('height').value, gH: document.getElementById('g-health').value, gD: document.getElementById('g-dev').value, gF: document.getElementById('g-finance').value };
-        syncDB(); alert('저장 완료');
-    }
-
-    function saveStock() {
-        db.stock = { price: document.getElementById('stock-buy-price').value, count: document.getElementById('stock-count').value };
-        syncDB(); alert('주식 정보가 저장되었습니다.');
+        db.basic = { birth: document.getElementById('birth').value, gender: document.getElementById('gender').value, height: document.getElementById('height').value };
+        syncDB(); alert('기본 정보 저장 완료');
     }
 
     function saveData(type) {
         let item = { id: Date.now() };
         if (type === 'health') {
-            item = { ...item, date: document.getElementById('h-date').value, w: parseFloat(document.getElementById('h-weight').value), sys: parseInt(document.getElementById('bp-sys').value), dia: parseInt(document.getElementById('bp-dia').value), sugar: parseInt(document.getElementById('h-sugar').value), meal: document.getElementById('h-meal').value };
+            item = { ...item, date: document.getElementById('h-date').value, w: parseFloat(document.getElementById('h-weight').value), sys: parseInt(document.getElementById('bp-sys').value), dia: parseInt(document.getElementById('bp-dia').value), sugar: parseInt(document.getElementById('h-sugar').value), meal: document.getElementById('h-meal').value, ex: document.getElementById('h-ex').value };
         } else if (type === 'dev') {
-            item = { ...item, date: document.getElementById('d-date').value, desc: document.getElementById('d-desc').value };
+            item = { ...item, date: document.getElementById('d-date').value, desc: document.getElementById('d-desc').value, memo: document.getElementById('d-memo').value };
         } else if (type === 'finance') {
             item = { ...item, date: document.getElementById('f-date').value, type: document.getElementById('f-type').value, cat: document.getElementById('f-cat').value, desc: document.getElementById('f-desc').value, amount: parseInt(document.getElementById('f-amount').value) || 0 };
         }
         db[type].push(item); syncDB(); renderAll(); if(type==='health') updateChart();
-        alert('기록되었습니다.');
+        alert('저장되었습니다.');
     }
 
     function deleteRecord(type, id) { if(confirm('삭제하시겠습니까?')) { db[type] = db[type].filter(i => i.id !== id); syncDB(); renderAll(); if(type==='health') updateChart(); } }
@@ -194,7 +171,7 @@
             fList.innerHTML = '';
             let totalIncome = 0, totalExpense = 0;
             db.finance.forEach(it => { if(it.type==='수입') totalIncome += it.amount; else totalExpense += it.amount; });
-            document.getElementById('fin-summary-content').innerHTML = `<div class="summary-period">전체 수입: ${totalIncome.toLocaleString()}원</div><div class="summary-period">전체 지출: ${totalExpense.toLocaleString()}원</div><div class="summary-period" style="color:var(--gold)">현재 잔액: ${(totalIncome - totalExpense).toLocaleString()}원</div>`;
+            document.getElementById('fin-summary-content').innerHTML = `<div class="summary-period">수입: ${totalIncome.toLocaleString()}원</div><div class="summary-period">지출: ${totalExpense.toLocaleString()}원</div><div class="summary-period" style="color:var(--gold)">현재 잔액: ${(totalIncome - totalExpense).toLocaleString()}원</div>`;
             db.finance.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(it => {
                 fList.innerHTML += `<div class="history-item"><strong>${it.date}</strong> [${it.type}/${it.cat}] ${it.amount.toLocaleString()}원<button class="del-btn" onclick="deleteRecord('finance', ${it.id})">삭제</button></div>`;
             });
